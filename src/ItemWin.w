@@ -39,6 +39,7 @@ CREATE WIDGET-POOL.
 /* Parameters Definitions ---                                           */
 
 /* Local Variable Definitions ---                                       */
+DEFINE VARIABLE objItemEntity AS ItemEntity NO-UNDO.
 
 /* Include dataset definitions */
 {business/ItemDataset.i}
@@ -197,10 +198,8 @@ END.
 &ANALYZE-SUSPEND _UIB-CODE-BLOCK _CONTROL BUTTON-3 C-Win
 ON CHOOSE OF BUTTON-3 IN FRAME DEFAULT-FRAME /* Get Item */
 DO:
-  VAR INTEGER iItemNum                = INTEGER(FILL-IN_ItemNum:screen-value).
-  VAR EntityFactory objFactory        = EntityFactory:GetInstance().
-  VAR ItemEntity objItemEntity        = objFactory:GetItemEntity().
-  VAR LOGICAL lItemFound              = objItemEntity:GetItemByNumber(iItemNum, OUTPUT DATASET dsItem).
+  VAR INTEGER iItemNum   = INTEGER(FILL-IN_ItemNum:screen-value).
+  VAR LOGICAL lItemFound = objItemEntity:GetItemByNumber(iItemNum, OUTPUT DATASET dsItem).
 
   IF lItemFound THEN DO:
     FIND FIRST ttItem NO-ERROR.
@@ -221,12 +220,10 @@ END.
 &ANALYZE-SUSPEND _UIB-CODE-BLOCK _CONTROL BUTTON-4 C-Win
 ON CHOOSE OF BUTTON-4 IN FRAME DEFAULT-FRAME /* Save */
 DO:
-  VAR INTEGER iItemNum                = INTEGER(FILL-IN_ItemNum:screen-value).
-  VAR EntityFactory objFactory        = EntityFactory:GetInstance().
-  VAR ItemEntity objItemEntity        = objFactory:GetItemEntity().
-  VAR LOGICAL lItemFound              = objItemEntity:GetItemByNumber(iItemNum, OUTPUT DATASET dsItem).
-  VAR CHARACTER cErrorMessage         = "".
-  VAR LOGICAL isValid                 = TRUE.
+  VAR INTEGER iItemNum    = INTEGER(FILL-IN_ItemNum:screen-value).
+  VAR LOGICAL lItemFound  = objItemEntity:GetItemByNumber(iItemNum, OUTPUT DATASET dsItem).
+  VAR CHARACTER cErrorMessage = "".
+  VAR LOGICAL isValid         = TRUE.
 
   ASSIGN FILL-IN_Price.
 
@@ -303,6 +300,10 @@ PROCEDURE disable_UI :
                frames.  This procedure is usually called when
                we are ready to "clean-up" after running.
 ------------------------------------------------------------------------------*/
+  /* Clean up business entity objects */
+  IF VALID-OBJECT(objItemEntity) THEN
+    DELETE OBJECT objItemEntity.
+
   /* Delete the WINDOW we created */
   IF SESSION:DISPLAY-TYPE = "GUI":U AND VALID-HANDLE(C-Win)
   THEN DELETE WIDGET C-Win.
@@ -323,6 +324,9 @@ PROCEDURE enable_UI :
                These statements here are based on the "Other 
                Settings" section of the widget Property Sheets.
 ------------------------------------------------------------------------------*/
+  /* Instantiate the business entity */
+  objItemEntity = EntityFactory:GetInstance():GetItemEntity().
+
   DISPLAY FILL-IN_ItemNum FILL-IN_Price 
       WITH FRAME DEFAULT-FRAME IN WINDOW C-Win.
   ENABLE FILL-IN_ItemNum FILL-IN_Price BUTTON-4 BUTTON-3 
